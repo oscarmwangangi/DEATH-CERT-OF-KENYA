@@ -32,3 +32,18 @@ Clone the repository to your local system using the following command:
 
 ```bash
 git clone https://github.com/oscarmwangangi/DEATH-CERT-OF-KENYA.git
+```
+### 2. Navigate to the Project Directory
+```bash
+cd DEATH CETIFICATE OF KENYA
+```
+### 3. Set Up Dependencies
+Ensure you have the necessary dependencies installed, such as PHP and MySQL, or WAMP
+
+### 4. Configure the Database
+Import the provided sql queris folder into your MySQL database.
+
+### 5. Launch the Application
+``` bash
+http://localhost/DEATH CETIFICATE OF KENYA.
+```
