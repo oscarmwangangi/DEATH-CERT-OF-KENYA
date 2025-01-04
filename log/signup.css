@@ -1,0 +1,55 @@
+body{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 90vh;
+   background-color: #cbcbcb;
+}
+form{
+    display: flex;
+    flex-direction: column;
+    background-color: #EEEEEE;
+    gap: 40px;
+    height: 400px;
+    width:400px;
+    align-items: center;
+    border-radius: 22px;
+    font-size: 25px;
+    
+}
+.login{
+    border-radius: 22px;
+}
+
+.Name{
+   margin-top: 40px;
+ 
+  
+}
+
+
+input{
+    height: 50px;
+    border-radius: 20px;
+    border: solid gainsboro;
+    width: 300px;
+
+}
+.btn{
+    height: 50px;
+    border-radius: 20px;
+    width: 300px;
+    background-color: #163520;
+    color: white;
+    
+}
+.btn:hover{
+   opacity: 0.9;
+   cursor: pointer;
+}
+
+.Login{
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+}

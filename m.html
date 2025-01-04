@@ -1,0 +1,183 @@
+<?php
+session_start();
+if ($_SESSION['role'] !== 'main_admin') {
+    header("Location: index.php");
+    exit();
+}
+
+// Database connection
+require './log/config.php'; // Ensure you have the correct path to your config file
+
+// Initialize variables
+$Name_of_the_filler = '';
+$start_date = '';
+$end_date = '';
+$user_name = '';
+
+// Check if GET parameters are set
+if (isset($_GET['Name_of_the_filler'])) {
+    $Name_of_the_filler = $_GET['Name_of_the_filler'];
+}
+if (isset($_GET['start_date'])) {
+    $start_date = $_GET['start_date'];
+}
+if (isset($_GET['end_date'])) {
+    $end_date = $_GET['end_date'];
+}
+
+// Fetch user name based on session user ID
+$user_id = $_SESSION['user_id']; // Ensure this is set when the user logs in
+$user_query = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+$user_query->execute([$user_id]);
+$user_result = $user_query->fetch(PDO::FETCH_ASSOC);
+$user_name = $user_result['username'] ?? '';
+
+// Query data for charts
+$today = date('Y-m-d');
+$week_start = date('Y-m-d', strtotime('monday this week'));
+$week_end = date('Y-m-d', strtotime('sunday this week'));
+
+// Fetch data for today's forms and weekly forms using submission_timestamp
+$today_query = $pdo->prepare("SELECT COUNT(*) FROM deathcertificate_information WHERE DATE(submission_timestamp) = ?");
+$today_query->execute([$today]);
+$today_count = $today_query->fetchColumn() ?: 0;
+
+$week_query = $pdo->prepare("SELECT COUNT(*) FROM deathcertificate_information WHERE DATE(submission_timestamp) BETWEEN ? AND ?");
+$week_query->execute([$week_start, $week_end]);
+$week_count = $week_query->fetchColumn() ?: 0;
+
+// Fetch user data
+$user_query = $pdo->prepare("SELECT role, COUNT(*) as count FROM users GROUP BY role");
+$user_query->execute();
+$user_data = $user_query->fetchAll(PDO::FETCH_ASSOC);
+
+// Initialize default counts
+$user_counts = [
+    'main_admin' => 0,
+    'second_admin' => 0,
+    'user' => 0
+];
+
+// Populate counts from fetched data
+foreach ($user_data as $data) {
+    if (array_key_exists($data['role'], $user_counts)) {
+        $user_counts[$data['role']] = $data['count'];
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Background color */
+        :root {
+            --wp--preset--color--blackish-blue: #101B2E;
+        }
+        body {
+            background-color: var(--wp--preset--color--blackish-blue);
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-900 text-white">
+
+    <!-- Sidebar -->
+    <div class="fixed top-0 left-0 h-screen w-60 bg-gray-800 p-6 shadow-md">
+        <h4 class="text-xl font-bold mb-6">Main Admin Dashboard</h4>
+        <p class="mb-6">Welcome, <?php echo htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8'); ?>!</p>
+        <a href="register.php" class="block bg-blue-600 text-white py-2 mb-4 text-center rounded">Register New User</a>
+        <a href="./correction_form.php" class="block bg-gray-600 text-white py-2 mb-4 text-center rounded">Correction</a>
+        <a href="./log/fill.php" class="block bg-green-600 text-white py-2 mb-4 text-center rounded">Data Entry</a>
+        <a href="./change_roles.php" class="block bg-teal-600 text-white py-2 mb-4 text-center rounded">Change Roles</a>
+        <form method="POST" action="logout.php">
+            <button type="submit" class="w-full bg-red-600 text-white py-2 rounded">Logout</button>
+        </form>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 p-8 space-y-8">
+
+        <!-- Title and Search Bar -->
+        <h2 class="text-3xl text-blue-500 font-semibold mb-4">Dashboard</h2>
+        <form method="GET" action="search_results.php" class="flex space-x-4">
+            <input type="text" name="Name_of_the_filler" placeholder="Search by Filler Name" class="flex-grow p-2 bg-gray-700 rounded text-white">
+            <input type="date" name="start_date" class="p-2 bg-gray-700 rounded text-white">
+            <input type="date" name="end_date" class="p-2 bg-gray-700 rounded text-white">
+            <button type="submit" class="bg-blue-600 px-4 py-2 rounded text-white">Search</button>
+        </form>
+
+        <!-- Charts Layout -->
+        <div class="grid grid-cols-3 gap-6">
+            <!-- Row 1: Three charts -->
+            <div class="bg-gray-800 p-4 rounded shadow">
+                <canvas id="lineChart1"></canvas>
+            </div>
+            <div class="bg-gray-800 p-4 rounded shadow">
+                <canvas id="lineChart2"></canvas>
+            </div>
+            <div class="bg-gray-800 p-4 rounded shadow">
+                <canvas id="horizontalBarChart"></canvas>
+            </div>
+
+            <!-- Row 2: Two columns -->
+            <div class="grid grid-cols-2 col-span-2 gap-6">
+                <!-- Column 1: Two charts -->
+                <div class="bg-gray-800 p-4 rounded shadow">
+                    <canvas id="barChart1"></canvas>
+                </div>
+                <div class="bg-gray-800 p-4 rounded shadow">
+                    <canvas id="barChart2"></canvas>
+                </div>
+            </div>
+
+            <!-- Column 2: Single chart spanning 2 rows -->
+            <div class="bg-gray-800 p-4 rounded shadow row-span-2">
+                <canvas id="comparisonBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for Chart.js -->
+    <script>
+        // Line chart for Death Cert filled (Jan - Dec)
+        const lineChart1 = new Chart(document.getElementById('lineChart1'), {
+            type: 'line',
+            data: { /* Your dataset here */ },
+            options: { /* Chart options */ }
+        });
+
+        // Line chart for Death Rates (Jan - Dec)
+        const lineChart2 = new Chart(document.getElementById('lineChart2'), {
+            type: 'line',
+            data: { /* Your dataset here */ },
+            options: { /* Chart options */ }
+        });
+
+        // Horizontal bar chart for Top 5 counties with highest death rates
+        const horizontalBarChart = new Chart(document.getElementById('horizontalBarChart'), {
+            type: 'bar',
+            data: { /* Your dataset here */ },
+            options: { /* Chart options */ }
+        });
+
+        // Bar chart for Number of users
+        const barChart1 = new Chart(document.getElementById('barChart1'), {
+            type: 'bar',
+            data: { /* Your dataset here */ },
+            options: { /* Chart options */ }
+        });
+
+        // Bar chart for Death comparison between Men and Women by Age Group
+        const comparisonBarChart = new Chart(document.getElementById('comparisonBarChart'), {
+            type: 'bar',
+            data: { /* Your dataset here */ },
+            options: { /* Chart options */ }
+        });
+    </script>
+</body>
+</html>
