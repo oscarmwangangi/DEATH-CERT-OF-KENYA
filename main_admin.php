@@ -270,9 +270,13 @@ $ageGroupLabels = json_encode(array_keys($ageGroups));
             <i class="fas fa-user-cog text-xl"></i>
             <span class="hidden sm:block text-base">Change Roles</span>
         </a>
-        <a href="./wikipedia_api.html" class="flex items-center space-x-3 text-gray-300 hover:text-white py-2 px-4 rounded transition-colors">
+        <a href="./wikipedia.html" class="flex items-center space-x-3 text-gray-300 hover:text-white py-2 px-4 rounded transition-colors">
         <i class="fa-brands fa-wikipedia-w"></i>
             <span class="hidden sm:block text-base">Wikipedia </span>
+        </a>
+        <a href="./ai-chat.php" class="flex items-center space-x-3 text-gray-300 hover:text-white py-2 px-4 rounded transition-colors">
+        <i class="fa-solid fa-robot"></i>
+            <span class="hidden sm:block text-base">Ai chat</span>
         </a>
         <!-- Logout -->
         <form method="POST" action="logout.php">

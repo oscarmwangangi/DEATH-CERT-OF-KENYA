@@ -1,4 +1,11 @@
 <?php
+
+session_start();
+if ($_SESSION['role'] !== 'main_admin') {
+    header("Location: index.php");
+    exit();
+}
+
 header("Access-Control-Allow-Origin: *");  // Allow all origins
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");  // Allow GET, POST, OPTIONS
 header("Access-Control-Allow-Headers: Content-Type");  // Allow Content-Type header

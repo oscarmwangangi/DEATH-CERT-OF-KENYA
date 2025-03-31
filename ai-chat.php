@@ -1,9 +1,15 @@
 <?php
 // ai-chat.php
+session_start();
+if ($_SESSION['role'] !== 'main_admin') {
+    header("Location: index.php");
+    exit();
+}
+
 date_default_timezone_set('Africa/Nairobi');
 ob_start(); // Start output buffering
 
-session_start();
+
 require_once 'db.php';
 
 // DeepSeek API configuration
@@ -295,10 +301,10 @@ ob_end_flush();
             // Add AI response
             const aiMsgHtml = `
                 <div class="flex mb-4 message-fade justify-start">
-                    <div class="bg-gray-900 text-gray-300 rounded-lg p-3 max-w-[80%] relative border border-gray-600 hover:border-gray-500 transition-all">
+                    <div class="bg-gray-900 text-gray-300 rounded-lg p-8 max-w-[80%] relative border border-gray-600 hover:border-gray-500 transition-all">
                         <i class="fas fa-spider absolute -right-4 top-2 text-gray-500"></i>
                         ${data.ai_message}
-                        <div class="absolute bottom-1 right-2  text-xs text-gray-500">
+                        <div class="absolute bottom-1 right-2 text-xs text-gray-500">
                             ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                     </div>
