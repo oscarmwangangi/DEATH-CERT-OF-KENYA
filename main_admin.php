@@ -26,7 +26,7 @@ if (isset($_GET['end_date'])) {
 }
 
 // Fetch user name based on session user ID
-$user_id = $_SESSION['user_id']; // Ensure this is set when the user logs in
+$user_id = $_SESSION['user_id']; 
 $user_query = $pdo->prepare("SELECT username FROM users WHERE id = ?");
 $user_query->execute([$user_id]);
 $user_result = $user_query->fetch(PDO::FETCH_ASSOC);
@@ -84,12 +84,20 @@ foreach ($topFillers as $filler) {
     $data[] = $filler['record_count'];
 }
 
+// Get current year
+$currentYear = date('Y');
+
 // Initialize an array to hold the monthly counts
 $monthly_counts = array_fill(0, 12, 0); // Array to store counts for each month (Jan-Dec)
 
-// Query to get the submission month for each death certificate
-$query = "SELECT MONTH(submission_timestamp) as month, COUNT(*) as count FROM deathcertificate_information GROUP BY MONTH(submission_timestamp)";
-$stmt = $pdo->query($query);
+// Query to get the submission month for each death certificate in current year
+$query = "SELECT MONTH(submission_timestamp) as month, COUNT(*) as count 
+          FROM deathcertificate_information 
+          WHERE YEAR(submission_timestamp) = :currentYear 
+          GROUP BY MONTH(submission_timestamp)";
+$stmt = $pdo->prepare($query);
+$stmt->bindParam(':currentYear', $currentYear, PDO::PARAM_INT);
+$stmt->execute();
 
 // Fetch the results and populate the monthly_counts array
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -97,10 +105,6 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $monthly_counts[$month - 1] = $row['count']; // Set the count for that month (zero-indexed)
 }
 
-// Print the PHP array as a JavaScript variable for the chart
-// SQL query to count the occurrences of each Death_in_the (district)
-
-$currentYear = date('Y');
 $currentMonth = date('m');
 
 // SQL query to count the occurrences of each Death_in_the (district) for the current month and year
@@ -270,6 +274,12 @@ $ageGroupLabels = json_encode(array_keys($ageGroups));
             <i class="fas fa-user-cog text-xl"></i>
             <span class="hidden sm:block text-base">Change Roles</span>
         </a>
+         <!-- Change Roles -->
+         <a href="./statitics.php" class="flex items-center space-x-3 text-gray-300 hover:text-white py-2 px-4 rounded transition-colors">
+            <i class="fas fa-heartbeat text-xl"></i>
+            <span class="hidden sm:block text-base">Stastistics</span>
+        </a>
+
         <a href="./wikipedia.html" class="flex items-center space-x-3 text-gray-300 hover:text-white py-2 px-4 rounded transition-colors">
         <i class="fa-brands fa-wikipedia-w"></i>
             <span class="hidden sm:block text-base">Wikipedia </span>
